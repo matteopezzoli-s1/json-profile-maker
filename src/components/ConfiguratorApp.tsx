@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { Download, ArrowLeft, FileJson } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { buildMobileconfig } from "@/lib/mobileconfig";
 import type { SchemaMap } from "@/types/schema";
 import PayloadSidebar from "./PayloadSidebar";
 import PayloadEditor from "./PayloadEditor";
@@ -38,33 +39,17 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
   );
 
   const handleDownload = useCallback(() => {
-    const profile: Record<string, unknown> = {};
-    for (const key of activePayloads) {
-      const vals = payloadValues[key] || {};
-      // Only include fields with values
-      const cleaned: Record<string, unknown> = {};
-      for (const [field, value] of Object.entries(vals)) {
-        if (value !== undefined && value !== "" && value !== null) {
-          cleaned[field] = value;
-        }
-      }
-      if (Object.keys(cleaned).length > 0) {
-        profile[key] = cleaned;
-      } else {
-        profile[key] = {};
-      }
-    }
-
-    const blob = new Blob([JSON.stringify(profile, null, 2)], {
-      type: "application/json",
+    const plist = buildMobileconfig(activePayloads, payloadValues, schema);
+    const blob = new Blob([plist], {
+      type: "application/x-apple-aspen-config",
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "profile_configuration.json";
+    a.download = "profile.mobileconfig";
     a.click();
     URL.revokeObjectURL(url);
-  }, [activePayloads, payloadValues]);
+  }, [activePayloads, payloadValues, schema]);
 
   const selectedDef = selectedPayload ? schema[selectedPayload] : null;
 
