@@ -1,4 +1,4 @@
-import { Search, Plus, Check } from "lucide-react";
+import { Search, Plus, Check, Settings } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { SchemaMap } from "@/types/schema";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,21 @@ const PayloadSidebar = ({
       </div>
       <ScrollArea className="flex-1">
         <div className="p-1.5">
+          {/* Generali - always first */}
+          <div
+            className={`group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              selectedPayload === "__general__"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "hover:bg-secondary"
+            }`}
+            onClick={() => onSelectPayload("__general__")}
+          >
+            <Settings className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span>Generali</span>
+          </div>
+
+          <div className="my-1.5 border-t border-sidebar-border" />
+
           {filtered.map(([key, val]) => {
             const isActive = activePayloads.includes(key);
             const isSelected = selectedPayload === key;

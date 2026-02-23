@@ -5,6 +5,7 @@ import { buildMobileconfig } from "@/lib/mobileconfig";
 import type { SchemaMap } from "@/types/schema";
 import PayloadSidebar from "./PayloadSidebar";
 import PayloadEditor from "./PayloadEditor";
+import GeneralEditor, { defaultGeneralSettings, type GeneralSettings } from "./GeneralEditor";
 
 interface Props {
   schema: SchemaMap;
@@ -14,10 +15,14 @@ interface Props {
 
 const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
   const [activePayloads, setActivePayloads] = useState<string[]>([]);
-  const [selectedPayload, setSelectedPayload] = useState<string | null>(null);
+  const [selectedPayload, setSelectedPayload] = useState<string | null>("__general__");
   const [payloadValues, setPayloadValues] = useState<
     Record<string, Record<string, unknown>>
   >({});
+  const [generalSettings, setGeneralSettings] = useState<GeneralSettings>({
+    ...defaultGeneralSettings,
+    PayloadIdentifier: `com.configurator.${crypto.randomUUID().slice(0, 8)}`,
+  });
 
   const handleTogglePayload = useCallback((key: string) => {
     setActivePayloads((prev) =>
@@ -39,7 +44,7 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
   );
 
   const handleDownload = useCallback(() => {
-    const plist = buildMobileconfig(activePayloads, payloadValues, schema);
+    const plist = buildMobileconfig(activePayloads, payloadValues, schema, generalSettings);
     const blob = new Blob([plist], {
       type: "application/x-apple-aspen-config",
     });
@@ -49,9 +54,9 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
     a.download = "profile.mobileconfig";
     a.click();
     URL.revokeObjectURL(url);
-  }, [activePayloads, payloadValues, schema]);
+  }, [activePayloads, payloadValues, schema, generalSettings]);
 
-  const selectedDef = selectedPayload ? schema[selectedPayload] : null;
+  const selectedDef = selectedPayload && selectedPayload !== "__general__" ? schema[selectedPayload] : null;
 
   return (
     <div className="flex h-screen flex-col">
@@ -93,7 +98,12 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
         />
 
         <main className="flex-1 overflow-hidden bg-background">
-          {selectedDef && selectedPayload ? (
+          {selectedPayload === "__general__" ? (
+            <GeneralEditor
+              values={generalSettings}
+              onChange={setGeneralSettings}
+            />
+          ) : selectedDef && selectedPayload ? (
             <PayloadEditor
               payloadKey={selectedPayload}
               definition={selectedDef}

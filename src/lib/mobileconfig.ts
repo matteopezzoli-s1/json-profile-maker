@@ -45,13 +45,24 @@ function generateUUID(): string {
   });
 }
 
+interface GeneralSettingsInput {
+  PayloadDisplayName: string;
+  PayloadIdentifier: string;
+  PayloadOrganization: string;
+  PayloadDescription: string;
+  ConsentText: string;
+  PayloadRemovalDisallowed: string;
+  RemovalDate: string;
+}
+
 export function buildMobileconfig(
   activePayloads: string[],
   payloadValues: Record<string, Record<string, unknown>>,
-  schema: Record<string, { displayName: string }>
+  schema: Record<string, { displayName: string }>,
+  general: GeneralSettingsInput
 ): string {
   const profileUUID = generateUUID();
-  const profileIdentifier = "com.configurator.profile";
+  const profileIdentifier = general.PayloadIdentifier || "com.configurator.profile";
 
   const payloadContents: string[] = [];
 
@@ -76,6 +87,22 @@ export function buildMobileconfig(
     payloadContents.push(dictToPlist(payloadDict, 2));
   }
 
+  // Build optional top-level keys
+  const optionalKeys: string[] = [];
+  const addOpt = (key: string, val: string) => {
+    if (val) optionalKeys.push(`\t<key>${key}</key>\n\t<string>${val}</string>`);
+  };
+  addOpt("PayloadOrganization", general.PayloadOrganization);
+  addOpt("PayloadDescription", general.PayloadDescription);
+  if (general.ConsentText) {
+    optionalKeys.push(`\t<key>ConsentText</key>\n\t<dict>\n\t\t<key>default</key>\n\t\t<string>${general.ConsentText.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</string>\n\t</dict>`);
+  }
+  if (general.PayloadRemovalDisallowed === "never") {
+    optionalKeys.push(`\t<key>PayloadRemovalDisallowed</key>\n\t<false/>`);
+  } else if (general.PayloadRemovalDisallowed === "with-auth") {
+    optionalKeys.push(`\t<key>PayloadRemovalDisallowed</key>\n\t<true/>`);
+  }
+
   const plist = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -85,7 +112,7 @@ export function buildMobileconfig(
 ${payloadContents.join("\n")}
 \t</array>
 \t<key>PayloadDisplayName</key>
-\t<string>Configured Profile</string>
+\t<string>${general.PayloadDisplayName || "Senza nome"}</string>
 \t<key>PayloadIdentifier</key>
 \t<string>${profileIdentifier}</string>
 \t<key>PayloadType</key>
@@ -94,6 +121,7 @@ ${payloadContents.join("\n")}
 \t<string>${profileUUID}</string>
 \t<key>PayloadVersion</key>
 \t<integer>1</integer>
+${optionalKeys.join("\n")}
 </dict>
 </plist>`;
 
