@@ -125,13 +125,14 @@ const PayloadSidebar = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="h-5 w-5 shrink-0 text-muted-foreground hover:text-foreground"
                       onClick={(e) => {
                         e.stopPropagation();
                         onAddInstance(key);
                       }}
+                      title="Aggiungi configurazione"
                     >
-                      <Copy className="h-3 w-3" />
+                      <Plus className="h-3.5 w-3.5" />
                     </Button>
                   )}
                 </div>
