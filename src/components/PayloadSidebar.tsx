@@ -1,23 +1,34 @@
-import { Search, Plus, Check, Settings } from "lucide-react";
+import { Search, Plus, Check, Settings, Trash2, Copy } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { SchemaMap } from "@/types/schema";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   schema: SchemaMap;
   activePayloads: string[];
   selectedPayload: string | null;
-  onSelectPayload: (key: string) => void;
+  selectedInstance: number;
+  payloadValues: Record<string, Record<string, unknown>[]>;
+  multiSet: Set<string>;
+  onSelectPayload: (key: string, instanceIndex?: number) => void;
   onTogglePayload: (key: string) => void;
+  onAddInstance: (key: string) => void;
+  onRemoveInstance: (key: string, index: number) => void;
 }
 
 const PayloadSidebar = ({
   schema,
   activePayloads,
   selectedPayload,
+  selectedInstance,
+  payloadValues,
+  multiSet,
   onSelectPayload,
   onTogglePayload,
+  onAddInstance,
+  onRemoveInstance,
 }: Props) => {
   const [search, setSearch] = useState("");
 
@@ -65,45 +76,99 @@ const PayloadSidebar = ({
           {filtered.map(([key, val]) => {
             const isActive = activePayloads.includes(key);
             const isSelected = selectedPayload === key;
+            const isMulti = multiSet.has(key);
+            const instances = payloadValues[key] || [];
+            const instanceCount = instances.length;
+
             return (
-              <div
-                key={key}
-                className={`group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
-                  isSelected
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "hover:bg-secondary"
-                }`}
-                onClick={() => {
-                  if (isActive) {
-                    onSelectPayload(key);
-                  } else {
-                    onTogglePayload(key);
-                    onSelectPayload(key);
-                  }
-                }}
-              >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onTogglePayload(key);
-                    if (isActive && selectedPayload === key) {
-                      onSelectPayload("");
-                    } else if (!isActive) {
-                      onSelectPayload(key);
+              <div key={key}>
+                <div
+                  className={`group flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
+                    isSelected && !isMulti
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : isSelected && isMulti
+                      ? "bg-sidebar-accent/50"
+                      : "hover:bg-secondary"
+                  }`}
+                  onClick={() => {
+                    if (isActive) {
+                      onSelectPayload(key, 0);
+                    } else {
+                      onTogglePayload(key);
+                      onSelectPayload(key, 0);
                     }
                   }}
-                  className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border transition-colors ${
-                    isActive
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-card"
-                  }`}
                 >
-                  {isActive && <Check className="h-3 w-3" />}
-                  {!isActive && (
-                    <Plus className="h-3 w-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTogglePayload(key);
+                      if (isActive && selectedPayload === key) {
+                        onSelectPayload("");
+                      } else if (!isActive) {
+                        onSelectPayload(key, 0);
+                      }
+                    }}
+                    className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border transition-colors ${
+                      isActive
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-card"
+                    }`}
+                  >
+                    {isActive && <Check className="h-3 w-3" />}
+                    {!isActive && (
+                      <Plus className="h-3 w-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                    )}
+                  </button>
+                  <span className="truncate flex-1">{val.displayName}</span>
+                  {isActive && isMulti && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddInstance(key);
+                      }}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
                   )}
-                </button>
-                <span className="truncate">{val.displayName}</span>
+                </div>
+
+                {/* Sub-instances for multi-capable active payloads */}
+                {isActive && isMulti && instanceCount > 0 && (
+                  <div className="ml-7 space-y-0.5 py-0.5">
+                    {instances.map((_, idx) => (
+                      <div
+                        key={idx}
+                        className={`group/inst flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors ${
+                          isSelected && selectedInstance === idx
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            : "hover:bg-secondary text-muted-foreground"
+                        }`}
+                        onClick={() => onSelectPayload(key, idx)}
+                      >
+                        <span className="flex-1 truncate">
+                          Configurazione {idx + 1}
+                        </span>
+                        {instanceCount > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 shrink-0 opacity-0 group-hover/inst:opacity-100 text-destructive hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRemoveInstance(key, idx);
+                            }}
+                          >
+                            <Trash2 className="h-2.5 w-2.5" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
