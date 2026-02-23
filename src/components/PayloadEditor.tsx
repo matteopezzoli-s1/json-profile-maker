@@ -21,6 +21,9 @@ interface Props {
   definition: PayloadDefinition;
   values: Record<string, unknown>;
   onChange: (key: string, field: string, value: unknown) => void;
+  instanceIndex?: number;
+  totalInstances?: number;
+  isMultiple?: boolean;
 }
 
 /* ── Array of strings ── */
@@ -333,7 +336,7 @@ const FieldInput = ({
   }
 };
 
-const PayloadEditor = ({ payloadKey, definition, values, onChange }: Props) => {
+const PayloadEditor = ({ payloadKey, definition, values, onChange, instanceIndex = 0, totalInstances = 1, isMultiple = false }: Props) => {
   const platforms = Object.entries(definition.platforms)
     .filter(([, v]) => v.introduced !== "n/a")
     .map(([k]) => k);
@@ -346,6 +349,11 @@ const PayloadEditor = ({ payloadKey, definition, values, onChange }: Props) => {
         <div className="mb-6">
           <h2 className="text-2xl font-semibold tracking-tight">
             {definition.displayName}
+            {isMultiple && totalInstances > 0 && (
+              <span className="ml-2 text-base font-normal text-muted-foreground">
+                #{instanceIndex + 1}
+              </span>
+            )}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground font-mono">
             {payloadKey}

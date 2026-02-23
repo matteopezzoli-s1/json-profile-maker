@@ -57,7 +57,7 @@ interface GeneralSettingsInput {
 
 export function buildMobileconfig(
   activePayloads: string[],
-  payloadValues: Record<string, Record<string, unknown>>,
+  payloadValues: Record<string, Record<string, unknown>[]>,
   schema: Record<string, { displayName: string }>,
   general: GeneralSettingsInput
 ): string {
@@ -67,24 +67,28 @@ export function buildMobileconfig(
   const payloadContents: string[] = [];
 
   for (const key of activePayloads) {
-    const vals = payloadValues[key] || {};
-    const cleaned: Record<string, unknown> = {};
-    for (const [field, value] of Object.entries(vals)) {
-      if (value !== undefined && value !== "" && value !== null) {
-        cleaned[field] = value;
+    const instances = payloadValues[key] || [{}];
+    for (let idx = 0; idx < instances.length; idx++) {
+      const vals = instances[idx] || {};
+      const cleaned: Record<string, unknown> = {};
+      for (const [field, value] of Object.entries(vals)) {
+        if (value !== undefined && value !== "" && value !== null) {
+          cleaned[field] = value;
+        }
       }
+
+      const suffix = instances.length > 1 ? `${key}.${idx}` : key;
+      const payloadDict: Record<string, unknown> = {
+        ...cleaned,
+        PayloadType: key,
+        PayloadVersion: 1,
+        PayloadIdentifier: `${profileIdentifier}.${suffix}`,
+        PayloadUUID: generateUUID(),
+        PayloadDisplayName: schema[key]?.displayName || key,
+      };
+
+      payloadContents.push(dictToPlist(payloadDict, 2));
     }
-
-    const payloadDict: Record<string, unknown> = {
-      ...cleaned,
-      PayloadType: key,
-      PayloadVersion: 1,
-      PayloadIdentifier: `${profileIdentifier}.${key}`,
-      PayloadUUID: generateUUID(),
-      PayloadDisplayName: schema[key]?.displayName || key,
-    };
-
-    payloadContents.push(dictToPlist(payloadDict, 2));
   }
 
   // Build optional top-level keys
