@@ -1,12 +1,14 @@
-import { useState, useCallback, useMemo } from "react";
-import { Download, ArrowLeft, FileJson } from "lucide-react";
+import { useState, useCallback, useMemo, useRef } from "react";
+import { Download, ArrowLeft, FileJson, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { buildMobileconfig } from "@/lib/mobileconfig";
+import { parseMobileconfig } from "@/lib/parseMobileconfig";
 import type { SchemaMap } from "@/types/schema";
 import { supportsMultiple } from "@/lib/payloadUtils";
 import PayloadSidebar from "./PayloadSidebar";
 import PayloadEditor from "./PayloadEditor";
 import GeneralEditor, { defaultGeneralSettings, type GeneralSettings } from "./GeneralEditor";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   schema: SchemaMap;
@@ -25,6 +27,8 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
     ...defaultGeneralSettings,
     PayloadIdentifier: `com.configurator.${crypto.randomUUID().slice(0, 8)}`,
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const multiSet = useMemo(
     () => new Set(Object.keys(schema).filter((k) => supportsMultiple(schema[k]))),
@@ -101,11 +105,70 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
     URL.revokeObjectURL(url);
   }, [activePayloads, payloadValues, schema, generalSettings]);
 
+  const handleImport = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileImport = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = parseMobileconfig(reader.result as string);
+
+          // Apply general settings
+          setGeneralSettings((prev) => ({ ...prev, ...parsed.general }));
+
+          // Group payloads by type
+          const grouped: Record<string, Record<string, unknown>[]> = {};
+          const types: string[] = [];
+          for (const p of parsed.payloads) {
+            if (!grouped[p.type]) {
+              grouped[p.type] = [];
+              types.push(p.type);
+            }
+            grouped[p.type].push(p.values);
+          }
+
+          setActivePayloads(types);
+          setPayloadValues(grouped);
+          setSelectedPayload("__general__");
+          setSelectedInstance(0);
+
+          toast({
+            title: "Profilo importato",
+            description: `Importati ${parsed.payloads.length} payload da ${file.name}`,
+          });
+        } catch (err) {
+          toast({
+            title: "Errore di importazione",
+            description: err instanceof Error ? err.message : "File non valido",
+            variant: "destructive",
+          });
+        }
+      };
+      reader.readAsText(file);
+      // Reset input so same file can be re-imported
+      e.target.value = "";
+    },
+    [toast]
+  );
+
   const selectedDef = selectedPayload && selectedPayload !== "__general__" ? schema[selectedPayload] : null;
   const currentInstances = selectedPayload ? payloadValues[selectedPayload] || [{}] : [{}];
 
   return (
     <div className="flex h-screen flex-col">
+      {/* Hidden file input for import */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".mobileconfig"
+        className="hidden"
+        onChange={handleFileImport}
+      />
       {/* Header */}
       <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4">
         <div className="flex items-center gap-3">
@@ -117,10 +180,16 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
             <span className="text-sm font-medium">{fileName}</span>
           </div>
         </div>
-        <Button onClick={handleDownload} disabled={activePayloads.length === 0} size="sm" className="gap-2">
-          <Download className="h-4 w-4" />
-          Esporta Profilo
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={handleImport} variant="outline" size="sm" className="gap-2">
+            <Upload className="h-4 w-4" />
+            Importa
+          </Button>
+          <Button onClick={handleDownload} disabled={activePayloads.length === 0} size="sm" className="gap-2">
+            <Download className="h-4 w-4" />
+            Esporta Profilo
+          </Button>
+        </div>
       </header>
 
       {/* Main content */}
