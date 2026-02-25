@@ -93,6 +93,13 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
     [selectedInstance]
   );
 
+  const handleClearAll = useCallback(() => {
+    setActivePayloads([]);
+    setPayloadValues({});
+    setSelectedPayload("__general__");
+    setSelectedInstance(0);
+  }, []);
+
   const handleDownload = useCallback(() => {
     const plist = buildMobileconfig(activePayloads, payloadValues, schema, generalSettings);
     const blob = new Blob([plist], {
@@ -209,6 +216,7 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
           onTogglePayload={handleTogglePayload}
           onAddInstance={handleAddInstance}
           onRemoveInstance={handleRemoveInstance}
+          onClearAll={handleClearAll}
         />
 
         <main className="flex-1 overflow-hidden bg-background">

@@ -1,8 +1,7 @@
-import { Search, Plus, Check, Settings, Trash2, Copy } from "lucide-react";
+import { Search, Plus, Check, Settings, Trash2, RotateCcw } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { SchemaMap } from "@/types/schema";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 
 interface Props {
@@ -16,6 +15,7 @@ interface Props {
   onTogglePayload: (key: string) => void;
   onAddInstance: (key: string) => void;
   onRemoveInstance: (key: string, index: number) => void;
+  onClearAll: () => void;
 }
 
 const PayloadSidebar = ({
@@ -29,6 +29,7 @@ const PayloadSidebar = ({
   onTogglePayload,
   onAddInstance,
   onRemoveInstance,
+  onClearAll,
 }: Props) => {
   const [search, setSearch] = useState("");
 
@@ -56,7 +57,7 @@ const PayloadSidebar = ({
           />
         </div>
       </div>
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         <div className="p-1.5">
           {/* Generali - always first */}
           <div
@@ -172,9 +173,20 @@ const PayloadSidebar = ({
             );
           })}
         </div>
-      </ScrollArea>
-      <div className="border-t border-sidebar-border px-3 py-2 text-xs text-muted-foreground">
-        {activePayloads.length} payload attivi
+      </div>
+      <div className="flex items-center justify-between border-t border-sidebar-border px-3 py-2">
+        <span className="text-xs text-muted-foreground">{activePayloads.length} payload attivi</span>
+        {activePayloads.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 gap-1 px-2 text-xs text-muted-foreground hover:text-destructive"
+            onClick={onClearAll}
+          >
+            <RotateCcw className="h-3 w-3" />
+            Cancella tutto
+          </Button>
+        )}
       </div>
     </div>
   );
