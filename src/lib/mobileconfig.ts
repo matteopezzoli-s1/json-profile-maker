@@ -58,7 +58,7 @@ interface GeneralSettingsInput {
 export function buildMobileconfig(
   activePayloads: string[],
   payloadValues: Record<string, Record<string, unknown>[]>,
-  schema: Record<string, { displayName: string }>,
+  schema: Record<string, { displayName: string; fields?: Record<string, { default?: unknown }> }>,
   general: GeneralSettingsInput
 ): string {
   const profileUUID = generateUUID();
@@ -70,9 +70,18 @@ export function buildMobileconfig(
     const instances = payloadValues[key] || [{}];
     for (let idx = 0; idx < instances.length; idx++) {
       const vals = instances[idx] || {};
+      // Start with all schema defaults, then overlay user values
       const cleaned: Record<string, unknown> = {};
+      const fieldDefs = schema[key]?.fields;
+      if (fieldDefs) {
+        for (const [field, def] of Object.entries(fieldDefs)) {
+          if (def.default !== undefined && def.default !== null && def.default !== "") {
+            cleaned[field] = def.default;
+          }
+        }
+      }
       for (const [field, value] of Object.entries(vals)) {
-        if (value !== undefined && value !== "" && value !== null) {
+        if (value !== undefined && value !== null && value !== "") {
           cleaned[field] = value;
         }
       }
