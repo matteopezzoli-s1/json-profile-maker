@@ -9,6 +9,7 @@ import PayloadSidebar from "./PayloadSidebar";
 import PayloadEditor from "./PayloadEditor";
 import GeneralEditor, { defaultGeneralSettings, type GeneralSettings } from "./GeneralEditor";
 import { useToast } from "@/hooks/use-toast";
+import logoImg from "@/assets/logo.png";
 
 interface Props {
   schema: SchemaMap;
@@ -39,7 +40,6 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
   const handleTogglePayload = useCallback((key: string) => {
     setActivePayloads((prev) => {
       if (prev.includes(key)) {
-        // Remove
         setPayloadValues((pv) => {
           const next = { ...pv };
           delete next[key];
@@ -47,7 +47,6 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
         });
         return prev.filter((k) => k !== key);
       }
-      // Add with one instance
       setPayloadValues((pv) => ({ ...pv, [key]: [{}] }));
       return [...prev, key];
     });
@@ -65,10 +64,9 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
       setPayloadValues((prev) => {
         const arr = [...(prev[key] || [])];
         arr.splice(index, 1);
-        if (arr.length === 0) return prev; // keep at least 1
+        if (arr.length === 0) return prev;
         return { ...prev, [key]: arr };
       });
-      // Adjust selected instance if needed
       if (selectedPayload === key) {
         setSelectedInstance((si) => {
           const len = (payloadValues[key]?.length || 1) - 1;
@@ -125,11 +123,7 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
       reader.onload = () => {
         try {
           const parsed = parseMobileconfig(reader.result as string);
-
-          // Apply general settings
           setGeneralSettings((prev) => ({ ...prev, ...parsed.general }));
-
-          // Group payloads by type
           const grouped: Record<string, Record<string, unknown>[]> = {};
           const types: string[] = [];
           for (const p of parsed.payloads) {
@@ -139,12 +133,10 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
             }
             grouped[p.type].push(p.values);
           }
-
           setActivePayloads(types);
           setPayloadValues(grouped);
           setSelectedPayload("__general__");
           setSelectedInstance(0);
-
           toast({
             title: "Profilo importato",
             description: `Importati ${parsed.payloads.length} payload da ${file.name}`,
@@ -158,7 +150,6 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
         }
       };
       reader.readAsText(file);
-      // Reset input so same file can be re-imported
       e.target.value = "";
     },
     [toast]
@@ -169,7 +160,6 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
 
   return (
     <div className="flex h-screen flex-col">
-      {/* Hidden file input for import */}
       <input
         ref={fileInputRef}
         type="file"
@@ -177,23 +167,24 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
         className="hidden"
         onChange={handleFileImport}
       />
-      {/* Header */}
-      <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4">
+      {/* Header - Smartilio MDM style */}
+      <header className="flex h-12 items-center justify-between px-4" style={{ background: 'hsl(var(--header-background))', color: 'hsl(var(--header-foreground))' }}>
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onReset} className="h-8 w-8">
+          <Button variant="ghost" size="icon" onClick={onReset} className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/10">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-2">
-            <FileJson className="h-5 w-5 text-primary" />
-            <span className="text-sm font-medium">{fileName}</span>
+          <div className="flex items-center gap-2.5">
+            <img src={logoImg} alt="Smartilio" className="h-7 w-auto brightness-0 invert" />
+            <span className="text-xs font-medium opacity-70">|</span>
+            <span className="text-sm font-medium opacity-90">{fileName}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={handleImport} variant="outline" size="sm" className="gap-2">
+          <Button onClick={handleImport} variant="ghost" size="sm" className="gap-2 text-white/80 hover:text-white hover:bg-white/10 border border-white/20">
             <Upload className="h-4 w-4" />
             Importa
           </Button>
-          <Button onClick={handleDownload} disabled={activePayloads.length === 0} size="sm" className="gap-2">
+          <Button onClick={handleDownload} disabled={activePayloads.length === 0} size="sm" className="gap-2 bg-white/20 text-white hover:bg-white/30 border border-white/20">
             <Download className="h-4 w-4" />
             Esporta Profilo
           </Button>

@@ -1,5 +1,6 @@
 import { useCallback } from "react";
-import { Upload, FileJson } from "lucide-react";
+import { Upload } from "lucide-react";
+import logoImg from "@/assets/logo.png";
 
 interface Props {
   onSchemaLoaded: (schema: unknown, fileName: string) => void;
@@ -40,16 +41,17 @@ const SchemaUploader = ({ onSchemaLoaded }: Props) => {
   );
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-8">
+    <div className="flex min-h-screen flex-col items-center justify-center p-8">
+      {/* Top bar accent */}
+      <div className="fixed top-0 left-0 right-0 h-1 bg-primary" />
+      
       <div className="w-full max-w-lg text-center">
-        <div className="mb-8">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-            <FileJson className="h-8 w-8 text-primary" />
-          </div>
-          <h1 className="text-3xl font-semibold tracking-tight">
+        <div className="mb-10">
+          <img src={logoImg} alt="Smartilio" className="mx-auto mb-6 h-16 w-auto" />
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             Profile Configurator
           </h1>
-          <p className="mt-2 text-muted-foreground">
+          <p className="mt-2 text-sm text-muted-foreground">
             Carica uno schema JSON per iniziare a configurare i profili MDM
           </p>
         </div>
@@ -57,11 +59,13 @@ const SchemaUploader = ({ onSchemaLoaded }: Props) => {
         <label
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
-          className="group flex cursor-pointer flex-col items-center gap-4 rounded-2xl border-2 border-dashed border-border bg-card p-12 transition-all hover:border-primary/50 hover:bg-primary/5"
+          className="group flex cursor-pointer flex-col items-center gap-4 rounded-xl border-2 border-dashed border-border bg-card p-12 transition-all hover:border-primary/50 hover:bg-accent/50"
         >
-          <Upload className="h-10 w-10 text-muted-foreground transition-colors group-hover:text-primary" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+            <Upload className="h-7 w-7 text-primary transition-transform group-hover:scale-110" />
+          </div>
           <div>
-            <p className="font-medium">
+            <p className="font-medium text-foreground">
               Trascina il file JSON qui
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
