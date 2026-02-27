@@ -1,8 +1,9 @@
-import { Search, Plus, Check, Settings, Trash2, RotateCcw } from "lucide-react";
+import { Search, Plus, Check, Settings, Trash2, RotateCcw, Shield } from "lucide-react";
 import { useState, useMemo } from "react";
 import type { SchemaMap } from "@/types/schema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 
 interface Props {
   schema: SchemaMap;
@@ -18,6 +19,8 @@ interface Props {
   onClearAll: () => void;
 }
 
+const PLATFORMS = ["iOS", "macOS", "tvOS", "watchOS"] as const;
+
 const PayloadSidebar = ({
   schema,
   activePayloads,
@@ -32,21 +35,42 @@ const PayloadSidebar = ({
   onClearAll,
 }: Props) => {
   const [search, setSearch] = useState("");
+  const [selectedPlatform, setSelectedPlatform] = useState<string>("iOS");
+  const [supervisedOnly, setSupervisedOnly] = useState(false);
 
   const filtered = useMemo(() => {
     const entries = Object.entries(schema);
-    if (!search) return entries;
-    const q = search.toLowerCase();
-    return entries.filter(
-      ([key, val]) =>
-        key.toLowerCase().includes(q) ||
-        val.displayName.toLowerCase().includes(q)
-    );
-  }, [schema, search]);
+    return entries.filter(([key, val]) => {
+      // Text search
+      if (search) {
+        const q = search.toLowerCase();
+        if (!key.toLowerCase().includes(q) && !val.displayName.toLowerCase().includes(q)) {
+          return false;
+        }
+      }
+      // Platform filter
+      if (selectedPlatform) {
+        const platformKeys = Object.keys(val.platforms || {});
+        if (!platformKeys.some((p) => p.toLowerCase() === selectedPlatform.toLowerCase())) {
+          return false;
+        }
+      }
+      // Supervised filter
+      if (supervisedOnly) {
+        const platformInfo = selectedPlatform
+          ? Object.entries(val.platforms || {}).find(([p]) => p.toLowerCase() === selectedPlatform.toLowerCase())?.[1]
+          : Object.values(val.platforms || {})[0];
+        if (!platformInfo?.supervised) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [schema, search, selectedPlatform, supervisedOnly]);
 
   return (
-    <div className="flex h-full w-64 flex-col border-r border-border bg-card">
-      <div className="border-b border-border p-3">
+    <div className="flex h-full w-72 flex-col border-r border-border bg-card">
+      <div className="border-b border-border p-3 space-y-2">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -54,6 +78,34 @@ const PayloadSidebar = ({
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cerca payload..."
             className="h-8 bg-background pl-8 text-xs"
+          />
+        </div>
+        {/* Platform filter */}
+        <div className="flex gap-1">
+          {PLATFORMS.map((p) => (
+            <button
+              key={p}
+              onClick={() => setSelectedPlatform(p)}
+              className={`flex-1 rounded-md px-2 py-1 text-[10px] font-medium transition-colors ${
+                selectedPlatform === p
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              }`}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+        {/* Supervised filter */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Shield className="h-3 w-3 text-muted-foreground" />
+            <span className="text-[10px] text-muted-foreground font-medium">Solo Supervised</span>
+          </div>
+          <Switch
+            checked={supervisedOnly}
+            onCheckedChange={setSupervisedOnly}
+            className="scale-75"
           />
         </div>
       </div>

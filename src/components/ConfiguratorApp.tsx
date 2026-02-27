@@ -31,9 +31,8 @@ const ConfiguratorApp = ({ schema, fileName, onReset }: Props) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // All payloads support multiple instances in MDM profiles
   const multiSet = useMemo(
-    () => new Set(Object.keys(schema)),
+    () => new Set(Object.keys(schema).filter((k) => supportsMultiple(schema[k]))),
     [schema]
   );
 
