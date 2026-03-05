@@ -38,20 +38,25 @@ const PayloadSidebar = ({
 
   const filtered = useMemo(() => {
     const entries = Object.entries(schema);
+    // Debug: log all unique platform keys
+    if (entries.length > 0) {
+      const allKeys = new Set<string>();
+      entries.forEach(([, v]) => Object.keys(v.platforms || {}).forEach(k => allKeys.add(k)));
+      console.log("[PayloadSidebar] All platform keys in schema:", [...allKeys]);
+      console.log("[PayloadSidebar] Selected platform:", selectedPlatform);
+      console.log("[PayloadSidebar] Total entries:", entries.length);
+    }
     return entries.filter(([key, val]) => {
-      // Text search
       if (search) {
         const q = search.toLowerCase();
         if (!key.toLowerCase().includes(q) && !val.displayName.toLowerCase().includes(q)) {
           return false;
         }
       }
-      // Platform filter
       if (selectedPlatform) {
         const platformKeys = Object.keys(val.platforms || {});
-        if (!platformKeys.some((p) => p.toLowerCase() === selectedPlatform.toLowerCase())) {
-          return false;
-        }
+        const match = platformKeys.some((p) => p.toLowerCase() === selectedPlatform.toLowerCase());
+        if (!match) return false;
       }
       return true;
     });
