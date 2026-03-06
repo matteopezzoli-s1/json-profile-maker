@@ -35,6 +35,7 @@ const PayloadSidebar = ({
 }: Props) => {
   const [search, setSearch] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState<string>("iOS");
+  const [minOsVersion, setMinOsVersion] = useState("");
 
   const filtered = useMemo(() => {
     const entries = Object.entries(schema);
@@ -46,14 +47,30 @@ const PayloadSidebar = ({
         }
       }
       if (selectedPlatform) {
-        const match = Object.entries(val.platforms || {}).some(
-          ([p, info]) => p.toLowerCase() === selectedPlatform.toLowerCase() && info.introduced !== "n/a"
+        const platformEntry = Object.entries(val.platforms || {}).find(
+          ([p]) => p.toLowerCase() === selectedPlatform.toLowerCase()
         );
-        if (!match) return false;
+        if (!platformEntry || platformEntry[1].introduced === "n/a") return false;
+        if (minOsVersion) {
+          const introduced = platformEntry[1].introduced;
+          if (introduced && compareVersions(introduced, minOsVersion) > 0) return false;
+        }
       }
       return true;
     });
-  }, [schema, search, selectedPlatform]);
+  }, [schema, search, selectedPlatform, minOsVersion]);
+
+  /** Compare two version strings, returns negative if a < b, 0 if equal, positive if a > b */
+  function compareVersions(a: string, b: string): number {
+    const pa = a.split(".").map(Number);
+    const pb = b.split(".").map(Number);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+      const na = pa[i] || 0;
+      const nb = pb[i] || 0;
+      if (na !== nb) return na - nb;
+    }
+    return 0;
+  }
 
   return (
     <div className="flex h-full w-72 flex-col border-r border-border bg-card">
@@ -82,6 +99,15 @@ const PayloadSidebar = ({
               {p}
             </button>
           ))}
+        </div>
+        {/* Min OS version filter */}
+        <div className="relative">
+          <Input
+            value={minOsVersion}
+            onChange={(e) => setMinOsVersion(e.target.value)}
+            placeholder="Versione OS minima (es. 15.0)"
+            className="h-8 bg-background text-xs"
+          />
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">

@@ -338,8 +338,7 @@ const FieldInput = ({
 
 const PayloadEditor = ({ payloadKey, definition, values, onChange, instanceIndex = 0, totalInstances = 1, isMultiple = false }: Props) => {
   const platforms = Object.entries(definition.platforms)
-    .filter(([, v]) => v.introduced !== "n/a")
-    .map(([k]) => k);
+    .filter(([, v]) => v.introduced !== "n/a");
 
   const fields = Object.entries(definition.fields);
 
@@ -359,9 +358,9 @@ const PayloadEditor = ({ payloadKey, definition, values, onChange, instanceIndex
             {payloadKey}
           </p>
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {platforms.map((p) => (
+            {platforms.map(([p, info]) => (
               <Badge key={p} variant="secondary" className="text-xs">
-                {p}
+                {p} {info.introduced}+
               </Badge>
             ))}
           </div>
