@@ -1,5 +1,7 @@
-import { useCallback } from "react";
-import { Upload } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Upload, Globe, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import logoImg from "@/assets/logo.png";
 
 interface Props {
@@ -7,6 +9,27 @@ interface Props {
 }
 
 const SchemaUploader = ({ onSchemaLoaded }: Props) => {
+  const [url, setUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleLoadUrl = useCallback(async () => {
+    if (!url.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(url.trim());
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const name = url.trim().split("/").pop() || "schema.json";
+      onSchemaLoaded(json, name);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Errore nel caricamento");
+    } finally {
+      setLoading(false);
+    }
+  }, [url, onSchemaLoaded]);
+
   const handleFile = useCallback(
     (file: File) => {
       const reader = new FileReader();
@@ -79,6 +102,25 @@ const SchemaUploader = ({ onSchemaLoaded }: Props) => {
             onChange={handleChange}
           />
         </label>
+
+        {/* URL loader */}
+        <div className="mt-6 flex flex-col gap-2">
+          <p className="text-sm font-medium text-muted-foreground">oppure carica da URL</p>
+          <div className="flex gap-2">
+            <Input
+              value={url}
+              onChange={(e) => { setUrl(e.target.value); setError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && handleLoadUrl()}
+              placeholder="https://example.com/schema.json"
+              className="flex-1 text-sm"
+            />
+            <Button onClick={handleLoadUrl} disabled={loading || !url.trim()} size="default" className="gap-2">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
+              Carica
+            </Button>
+          </div>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </div>
       </div>
     </div>
   );
