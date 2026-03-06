@@ -18,10 +18,22 @@ const SchemaUploader = ({ onSchemaLoaded }: Props) => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(url.trim());
+      let fetchUrl = url.trim();
+
+      // For Google Drive share/view links, extract file ID and use direct download
+      const gdriveMatch = fetchUrl.match(/drive\.google\.com.*[?&]id=([a-zA-Z0-9_-]+)/);
+      if (gdriveMatch) {
+        fetchUrl = `https://drive.google.com/uc?export=download&id=${gdriveMatch[1]}`;
+      }
+
+      // Use CORS proxy to bypass cross-origin restrictions
+      const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(fetchUrl)}`;
+
+      const res = await fetch(proxyUrl);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      const name = url.trim().split("/").pop() || "schema.json";
+      const text = await res.text();
+      const json = JSON.parse(text);
+      const name = url.trim().split("/").pop()?.split("?")[0] || "schema.json";
       onSchemaLoaded(json, name);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Errore nel caricamento");
